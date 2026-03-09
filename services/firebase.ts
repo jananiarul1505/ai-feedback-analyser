@@ -25,134 +25,59 @@ let app;
 let authInstance: any = null;
 
 try {
-  // Only initialize if config is provided
   if (firebaseConfig.apiKey && firebaseConfig.apiKey !== 'MISSING_API_KEY') {
     app = initializeApp(firebaseConfig);
     authInstance = getAuth(app);
   } else {
-    console.warn("Firebase config is missing. Please set VITE_FIREBASE_* environment variables.");
+    console.error("Firebase config is missing. Please set VITE_FIREBASE_* environment variables.");
   }
 } catch (error) {
   console.error("Firebase initialization error", error);
 }
 
-// Fallback/Mock behavior if Firebase is not configured (prevents complete app crash)
-const mockAuth = {
-  currentUser: JSON.parse(localStorage.getItem('mock_user') || 'null'),
-};
+export const auth = authInstance;
 
-const notifyAuthListeners = () => {
-  const user = mockAuth.currentUser;
-  (window as any).__authListeners?.forEach((cb: any) => cb(user));
-};
-
-export const auth = authInstance || mockAuth;
-
-const onAuthStateChangedWrapper = (authObj: any, callback: (user: any) => void) => {
-  if (authInstance) {
-    return onAuthStateChanged(authInstance, callback);
-  }
-  
-  if (!(window as any).__authListeners) {
-    (window as any).__authListeners = [];
-  }
-  (window as any).__authListeners.push(callback);
-  callback(mockAuth.currentUser);
-  return () => {
-    (window as any).__authListeners = (window as any).__authListeners.filter((cb: any) => cb !== callback);
-  };
+const signInWithGoogle = async () => {
+  if (!authInstance) throw new Error("Firebase Auth is not initialized.");
+  const provider = new GoogleAuthProvider();
+  return signInWithPopup(authInstance, provider);
 };
 
 const signInWithEmailAndPasswordWrapper = async (authObj: any, email: string, pass: string) => {
-  if (authInstance) {
-    return signInWithEmailAndPassword(authInstance, email, pass);
-  }
-  return new Promise<void>((resolve) => {
-    const user = { email, uid: 'mock-uid-' + Date.now(), displayName: email.split('@')[0], photoURL: null };
-    mockAuth.currentUser = user;
-    localStorage.setItem('mock_user', JSON.stringify(user));
-    notifyAuthListeners();
-    resolve();
-  });
+  if (!authInstance) throw new Error("Firebase Auth is not initialized.");
+  return signInWithEmailAndPassword(authInstance, email, pass);
 };
 
 const createUserWithEmailAndPasswordWrapper = async (authObj: any, email: string, pass: string) => {
-  if (authInstance) {
-    return createUserWithEmailAndPassword(authInstance, email, pass);
-  }
-  return new Promise<void>((resolve) => {
-    const user = { email, uid: 'mock-uid-' + Date.now(), displayName: email.split('@')[0], photoURL: null };
-    mockAuth.currentUser = user;
-    localStorage.setItem('mock_user', JSON.stringify(user));
-    notifyAuthListeners();
-    resolve();
-  });
-};
-
-const signInWithGoogleWrapper = async () => {
-  if (authInstance) {
-    const provider = new GoogleAuthProvider();
-    return signInWithPopup(authInstance, provider);
-  }
-  return new Promise<void>((resolve) => {
-    const user = {
-        email: 'google_user@example.com',
-        uid: 'mock-google-uid',
-        displayName: 'Google User',
-        photoURL: 'https://picsum.photos/200'
-    };
-    mockAuth.currentUser = user;
-    localStorage.setItem('mock_user', JSON.stringify(user));
-    notifyAuthListeners();
-    resolve();
-  });
+  if (!authInstance) throw new Error("Firebase Auth is not initialized.");
+  return createUserWithEmailAndPassword(authInstance, email, pass);
 };
 
 const logoutWrapper = async () => {
-  if (authInstance) {
-    return logout(authInstance);
-  }
-  return new Promise<void>((resolve) => {
-    mockAuth.currentUser = null;
-    localStorage.removeItem('mock_user');
-    notifyAuthListeners();
-    resolve();
-  });
+  if (!authInstance) throw new Error("Firebase Auth is not initialized.");
+  return logout(authInstance);
 };
 
 const updateProfileWrapper = async (user: any, updates: { displayName?: string, photoURL?: string }) => {
-  if (authInstance) {
-    return updateProfile(user, updates);
-  }
-  if (mockAuth.currentUser) {
-      mockAuth.currentUser = { ...mockAuth.currentUser, ...updates };
-      localStorage.setItem('mock_user', JSON.stringify(mockAuth.currentUser));
-      notifyAuthListeners();
-  }
+  if (!authInstance) throw new Error("Firebase Auth is not initialized.");
+  return updateProfile(user, updates);
 };
 
 const updateEmailWrapper = async (user: any, newEmail: string) => {
-  if (authInstance) {
-    return updateEmail(user, newEmail);
-  }
-  if (mockAuth.currentUser) {
-      mockAuth.currentUser = { ...mockAuth.currentUser, email: newEmail };
-      localStorage.setItem('mock_user', JSON.stringify(mockAuth.currentUser));
-      notifyAuthListeners();
-  }
+  if (!authInstance) throw new Error("Firebase Auth is not initialized.");
+  return updateEmail(user, newEmail);
 };
 
 const updatePasswordWrapper = async (user: any, newPass: string) => {
-  if (authInstance) {
-    return updatePassword(user, newPass);
-  }
+  if (!authInstance) throw new Error("Firebase Auth is not initialized.");
+  return updatePassword(user, newPass);
 };
 
 export {
-  onAuthStateChangedWrapper as onAuthStateChanged,
+  onAuthStateChanged,
   signInWithEmailAndPasswordWrapper as signInWithEmailAndPassword,
   createUserWithEmailAndPasswordWrapper as createUserWithEmailAndPassword,
-  signInWithGoogleWrapper as signInWithGoogle,
+  signInWithGoogle,
   logoutWrapper as logout,
   updateProfileWrapper as updateProfile,
   updateEmailWrapper as updateEmail,
