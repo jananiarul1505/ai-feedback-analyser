@@ -1,0 +1,17 @@
+
+> ai-feedback-intelligence@0.0.0 build
+> vite build
+
+vite v6.4.1 building for production...
+transforming...
+✓ 2390 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                    4.08 kB │ gzip:   1.38 kB
+dist/assets/index-C2R9QWja.js  1,137.78 kB │ gzip: 309.47 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 5.20s

@@ -147,6 +147,7 @@ export const Login: React.FC = () => {
             <div className="pt-4 animate-slide-up delay-300 space-y-4">
               {/* Primary Action Button */}
               <button 
+                type="button"
                 onClick={handleEmailAuth}
                 disabled={loading}
                 className={`w-full py-4 px-4 rounded-xl font-bold tracking-wide transition-all duration-300 border relative overflow-hidden group
@@ -169,6 +170,7 @@ export const Login: React.FC = () => {
 
               {/* Google Button */}
               <button 
+                type="button"
                 onClick={handleGoogleLogin}
                 disabled={loading}
                 className={`w-full py-3.5 px-4 rounded-xl font-semibold tracking-wide border transition-all flex items-center justify-center gap-2

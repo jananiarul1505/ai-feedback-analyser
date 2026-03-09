@@ -65,8 +65,10 @@ export const Dashboard: React.FC = () => {
   useEffect(() => {
     if (!metrics || !mapContainerRef.current) return;
 
-    if (!mapInstanceRef.current) {
-      // Create map
+    // Check if the map is already initialized on this DOM element
+    const container = mapContainerRef.current as any;
+    if (!mapInstanceRef.current && !container._leaflet_id) {
+      // Create map only if not already initialized
       const map = L.map(mapContainerRef.current, {
         zoomControl: false,
         attributionControl: false
@@ -76,6 +78,9 @@ export const Dashboard: React.FC = () => {
     }
 
     const map = mapInstanceRef.current;
+    if (!map) return;
+
+    // ... (rest of the map update logic)
 
     // Update tile layer based on theme
     map.eachLayer((layer) => {
@@ -120,6 +125,11 @@ export const Dashboard: React.FC = () => {
         </div>
       `);
     });
+
+    // Ensure map resizes correctly
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 100);
   }, [metrics, isHolographic]);
 
 
