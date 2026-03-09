@@ -62,10 +62,11 @@ export const Login: React.FC = () => {
       await signInWithGoogle();
       navigate('/feedback');
     } catch (err: any) {
+      console.error("Google Sign-In Error:", err);
       if (err.code === 'auth/popup-closed-by-user') {
         setError('Sign-in cancelled.');
       } else {
-        setError('Access Denied: Unauthorized account or network error.');
+        setError('Access Denied: Unauthorized account or network error. (Check console)');
       }
     } finally {
       setLoading(false);
