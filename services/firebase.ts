@@ -1,128 +1,160 @@
-// Mock Firebase implementation for functional demo
-// In a real scenario, this would import from 'firebase/app' and 'firebase/auth'
+import { initializeApp } from 'firebase/app';
+import { 
+  getAuth, 
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
+  signOut as logout,
+  updateProfile,
+  updateEmail,
+  updatePassword
+} from 'firebase/auth';
 
-export const auth = {
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
+};
+
+let app;
+let authInstance: any = null;
+
+try {
+  // Only initialize if config is provided
+  if (firebaseConfig.apiKey && firebaseConfig.apiKey !== 'MISSING_API_KEY') {
+    app = initializeApp(firebaseConfig);
+    authInstance = getAuth(app);
+  } else {
+    console.warn("Firebase config is missing. Please set VITE_FIREBASE_* environment variables.");
+  }
+} catch (error) {
+  console.error("Firebase initialization error", error);
+}
+
+// Fallback/Mock behavior if Firebase is not configured (prevents complete app crash)
+const mockAuth = {
   currentUser: JSON.parse(localStorage.getItem('mock_user') || 'null'),
 };
 
 const notifyAuthListeners = () => {
-  // Simple observer pattern simulation
-  const user = auth.currentUser;
+  const user = mockAuth.currentUser;
   (window as any).__authListeners?.forEach((cb: any) => cb(user));
 };
 
-export const onAuthStateChanged = (authObj: any, callback: (user: any) => void) => {
+export const auth = authInstance || mockAuth;
+
+const onAuthStateChangedWrapper = (authObj: any, callback: (user: any) => void) => {
+  if (authInstance) {
+    return onAuthStateChanged(authInstance, callback);
+  }
+  
   if (!(window as any).__authListeners) {
     (window as any).__authListeners = [];
   }
   (window as any).__authListeners.push(callback);
-  
-  // Initial call
-  callback(auth.currentUser);
-  
+  callback(mockAuth.currentUser);
   return () => {
     (window as any).__authListeners = (window as any).__authListeners.filter((cb: any) => cb !== callback);
   };
 };
 
-export const signInWithEmailAndPassword = async (authObj: any, email: string, pass: string) => {
-  // Mock login
-  return new Promise<void>((resolve, reject) => {
-    setTimeout(() => {
-        // Simple mock validation
-        if(email.includes('error')) {
-            reject(new Error('Mock invalid credential error'));
-            return;
-        }
-
-        const user = { 
-            email, 
-            uid: 'mock-uid-' + Date.now(),
-            displayName: email.split('@')[0],
-            photoURL: null 
-        };
-        auth.currentUser = user;
-        localStorage.setItem('mock_user', JSON.stringify(user));
-        notifyAuthListeners();
-        resolve();
-    }, 800);
+const signInWithEmailAndPasswordWrapper = async (authObj: any, email: string, pass: string) => {
+  if (authInstance) {
+    return signInWithEmailAndPassword(authInstance, email, pass);
+  }
+  return new Promise<void>((resolve) => {
+    const user = { email, uid: 'mock-uid-' + Date.now(), displayName: email.split('@')[0], photoURL: null };
+    mockAuth.currentUser = user;
+    localStorage.setItem('mock_user', JSON.stringify(user));
+    notifyAuthListeners();
+    resolve();
   });
 };
 
-export const createUserWithEmailAndPassword = async (authObj: any, email: string, pass: string) => {
-    // Mock signup
-    return new Promise<void>((resolve) => {
-      setTimeout(() => {
-          const user = { 
-              email, 
-              uid: 'mock-uid-' + Date.now(), 
-              displayName: email.split('@')[0],
-              photoURL: null
-          };
-          auth.currentUser = user;
-          localStorage.setItem('mock_user', JSON.stringify(user));
-          notifyAuthListeners();
-          resolve();
-      }, 1000);
-    });
+const createUserWithEmailAndPasswordWrapper = async (authObj: any, email: string, pass: string) => {
+  if (authInstance) {
+    return createUserWithEmailAndPassword(authInstance, email, pass);
+  }
+  return new Promise<void>((resolve) => {
+    const user = { email, uid: 'mock-uid-' + Date.now(), displayName: email.split('@')[0], photoURL: null };
+    mockAuth.currentUser = user;
+    localStorage.setItem('mock_user', JSON.stringify(user));
+    notifyAuthListeners();
+    resolve();
+  });
 };
 
-export const signInWithGoogle = async () => {
-    return new Promise<void>((resolve) => {
-        setTimeout(() => {
-            const user = {
-                email: 'google_user@example.com',
-                uid: 'mock-google-uid',
-                displayName: 'Google User',
-                photoURL: 'https://picsum.photos/200'
-            };
-            auth.currentUser = user;
-            localStorage.setItem('mock_user', JSON.stringify(user));
-            notifyAuthListeners();
-            resolve();
-        }, 1000);
-    });
+const signInWithGoogleWrapper = async () => {
+  if (authInstance) {
+    const provider = new GoogleAuthProvider();
+    return signInWithPopup(authInstance, provider);
+  }
+  return new Promise<void>((resolve) => {
+    const user = {
+        email: 'google_user@example.com',
+        uid: 'mock-google-uid',
+        displayName: 'Google User',
+        photoURL: 'https://picsum.photos/200'
+    };
+    mockAuth.currentUser = user;
+    localStorage.setItem('mock_user', JSON.stringify(user));
+    notifyAuthListeners();
+    resolve();
+  });
 };
 
-export const logout = async () => {
-    return new Promise<void>((resolve) => {
-        auth.currentUser = null;
-        localStorage.removeItem('mock_user');
-        notifyAuthListeners();
-        resolve();
-    });
+const logoutWrapper = async () => {
+  if (authInstance) {
+    return logout(authInstance);
+  }
+  return new Promise<void>((resolve) => {
+    mockAuth.currentUser = null;
+    localStorage.removeItem('mock_user');
+    notifyAuthListeners();
+    resolve();
+  });
 };
 
-export const updateProfile = async (user: any, updates: { displayName?: string, photoURL?: string }) => {
-    return new Promise<void>((resolve) => {
-        setTimeout(() => {
-            if (auth.currentUser) {
-                auth.currentUser = { ...auth.currentUser, ...updates };
-                localStorage.setItem('mock_user', JSON.stringify(auth.currentUser));
-                notifyAuthListeners();
-            }
-            resolve();
-        }, 500);
-    });
+const updateProfileWrapper = async (user: any, updates: { displayName?: string, photoURL?: string }) => {
+  if (authInstance) {
+    return updateProfile(user, updates);
+  }
+  if (mockAuth.currentUser) {
+      mockAuth.currentUser = { ...mockAuth.currentUser, ...updates };
+      localStorage.setItem('mock_user', JSON.stringify(mockAuth.currentUser));
+      notifyAuthListeners();
+  }
 };
 
-export const updateEmail = async (user: any, newEmail: string) => {
-    return new Promise<void>((resolve) => {
-        setTimeout(() => {
-            if (auth.currentUser) {
-                auth.currentUser = { ...auth.currentUser, email: newEmail };
-                localStorage.setItem('mock_user', JSON.stringify(auth.currentUser));
-                notifyAuthListeners();
-            }
-            resolve();
-        }, 500);
-    });
+const updateEmailWrapper = async (user: any, newEmail: string) => {
+  if (authInstance) {
+    return updateEmail(user, newEmail);
+  }
+  if (mockAuth.currentUser) {
+      mockAuth.currentUser = { ...mockAuth.currentUser, email: newEmail };
+      localStorage.setItem('mock_user', JSON.stringify(mockAuth.currentUser));
+      notifyAuthListeners();
+  }
 };
 
-export const updatePassword = async (user: any, newPass: string) => {
-    return new Promise<void>((resolve) => {
-        setTimeout(() => {
-            resolve(); // Mock success
-        }, 500);
-    });
+const updatePasswordWrapper = async (user: any, newPass: string) => {
+  if (authInstance) {
+    return updatePassword(user, newPass);
+  }
+};
+
+export {
+  onAuthStateChangedWrapper as onAuthStateChanged,
+  signInWithEmailAndPasswordWrapper as signInWithEmailAndPassword,
+  createUserWithEmailAndPasswordWrapper as createUserWithEmailAndPassword,
+  signInWithGoogleWrapper as signInWithGoogle,
+  logoutWrapper as logout,
+  updateProfileWrapper as updateProfile,
+  updateEmailWrapper as updateEmail,
+  updatePasswordWrapper as updatePassword
 };
