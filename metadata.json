@@ -1,0 +1,7 @@
+{
+  "name": "AI Feedback Intelligence",
+  "description": "A sophisticated sentiment analysis and feedback management platform featuring real-time dashboards, holographic UI design, and AI-driven insights.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
