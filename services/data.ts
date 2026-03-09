@@ -1,7 +1,7 @@
 import { FeedbackData, DashboardMetrics, Sentiment, UserData } from '../types';
 import { GoogleGenAI, Type } from "@google/genai";
 
-// Initialize Gemini
+// Initialize AI
 // Note: In a production app, calls should be proxied through a backend to protect the key,
 // or use Firebase App Check. For this demo, we use the env var directly.
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -66,7 +66,7 @@ class DataService {
 
   async addFeedback(data: Omit<FeedbackData, 'id' | 'sentimentLabel' | 'sentimentMismatch' | 'abusiveWords' | 'flagged' | 'emotion' | 'keywords' | 'aspects'>): Promise<FeedbackData> {
     
-    // --- GEMINI AI ANALYSIS ---
+    // --- AI ANALYSIS ---
     let aiResult = {
       sentiment: Sentiment.NEUTRAL,
       emotion: 'Neutral',
@@ -76,7 +76,7 @@ class DataService {
     };
 
     try {
-      const modelId = 'gemini-3-flash-preview'; 
+      const modelId = 'gemini-1.5-flash'; 
       
       // Advanced Prompt Engineering for sophisticated analysis
       const prompt = `
@@ -135,7 +135,7 @@ class DataService {
         };
       }
     } catch (error) {
-      console.error("Gemini Analysis Failed, falling back to basic logic", error);
+      console.error("AI Analysis Failed, falling back to basic logic", error);
       // Fallback simple logic
       const lower = data.text.toLowerCase();
       if (lower.includes('bad') || lower.includes('terrible')) aiResult.sentiment = Sentiment.NEGATIVE;
