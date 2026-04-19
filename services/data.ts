@@ -82,19 +82,36 @@ class DataService {
       const prompt = `
         ROLE: You are an expert Linguistic Psychologist specializing in high-fidelity Sentiment and Emotion Analysis.
         
+        CONTEXT:
+        A user has provided feedback for an application. You are given their text comment, their numerical rating (1-5 stars), and whether they would recommend the product.
+        
+        INPUT DATA:
+        - Text: "${data.text}"
+        - Rating: ${data.rating}/5 stars
+        - Recommend: ${data.recommend}
+
         TASK:
-        Analyze the following user feedback to extract precise emotional and semantic data.
+        Analyze the feedback to extract precise emotional and semantic data. Use the rating and recommendation as additional context to resolve ambiguity in the text.
+
+        GUIDELINES:
+        - If the text is brief or ambiguous (e.g., "Okay"), use the Rating/Recommend status to determine Sentiment.
+        - If the text explicitly contradicts the rating (e.g., "Love it" with 1 star), identify the sentiment of the TEXT but ensure 'flagged' is true to indicate a mismatch.
+        - Sarcasm Detection: Be alert for sarcasm if the text is positive but the rating is very low.
+
+        EXAMPLES:
+        1. Text: "It is fine." Rating: 4. Rec: Yes. -> Sentiment: Positive, Emotion: Contentment.
+        2. Text: "It is fine." Rating: 2. Rec: No. -> Sentiment: Negative, Emotion: Disappointed Indifference.
+        3. Text: "Amazing app, but it crashes." Rating: 3. Rec: Maybe. -> Sentiment: Neutral, Emotion: Frustrated Appreciation.
 
         REQUIREMENTS:
         1. Emotion Analysis: Identify the specific, high-resolution emotional state. 
            - STRICTLY FORBIDDEN: Basic labels like "Happy", "Sad", "Neutral", "Good", "Bad", "Approval".
            - REQUIRED: Use sophisticated, nuanced vocabulary (e.g., "Frustrated Anticipation", "Grateful Relief", "Skeptical Curiosity", "Indignant Rage", "Delighted Surprise", "Exasperated Fatigue").
-           - Accuracy is paramount. Capture the exact vibe.
         2. Keywords: Extract exactly the top 3 most significant nouns or concepts.
         3. Sentiment: Classify the overall polarity (Positive, Neutral, Negative).
-        4. Aspects: Identify specific features mentioned and their sentiment.
-
-        INPUT TEXT: "${data.text}"
+        4. Aspects: Identify specific features mentioned (e.g., UI, Performance, Support) and their individual sentiment.
+        5. Mismatch: Set to true if there is a severe contradiction between the text sentiment and the numerical rating.
+        6. Flagged: Set to true if the content is toxic, abusive, or spam.
       `;
       
       const response = await ai.models.generateContent({
@@ -106,7 +123,7 @@ class DataService {
             type: Type.OBJECT,
             properties: {
               sentiment: { type: Type.STRING, enum: ["Positive", "Neutral", "Negative"] },
-              emotion: { type: Type.STRING, description: "A precise, sophisticated emotional label (e.g., 'Cautious Optimism', 'Bitter Disappointment'). Do not use simple words." },
+              emotion: { type: Type.STRING, description: "A precise, sophisticated emotional label. Do not use simple words." },
               keywords: { type: Type.ARRAY, items: { type: Type.STRING } },
               aspects: { 
                 type: Type.ARRAY, 
@@ -118,7 +135,8 @@ class DataService {
                   }
                 }
               },
-              flagged: { type: Type.BOOLEAN, description: "True if the content is abusive, toxic, or spam based on safety thresholds." }
+              mismatch: { type: Type.BOOLEAN, description: "True if text/rating mismatch." },
+              flagged: { type: Type.BOOLEAN, description: "True if toxic or spam." }
             }
           }
         }
@@ -131,20 +149,28 @@ class DataService {
           emotion: parsed.emotion,
           keywords: parsed.keywords || [],
           aspects: parsed.aspects || [],
-          flagged: parsed.flagged || false
+          flagged: parsed.flagged || false,
+          mismatch: parsed.mismatch || false
         };
       }
     } catch (error) {
       console.error("AI Analysis Failed, falling back to basic logic", error);
-      // Fallback simple logic
+      // Fallback simple logic - improved to consider rating
       const lower = data.text.toLowerCase();
-      if (lower.includes('bad') || lower.includes('terrible')) aiResult.sentiment = Sentiment.NEGATIVE;
-      else if (lower.includes('good') || lower.includes('love')) aiResult.sentiment = Sentiment.POSITIVE;
+      if (data.rating >= 4) aiResult.sentiment = Sentiment.POSITIVE;
+      else if (data.rating <= 2) aiResult.sentiment = Sentiment.NEGATIVE;
+      else aiResult.sentiment = Sentiment.NEUTRAL;
+
+      // refine with text if text is strong
+      if (lower.includes('bad') || lower.includes('terrible') || lower.includes('awful')) aiResult.sentiment = Sentiment.NEGATIVE;
+      if (lower.includes('good') || lower.includes('love') || lower.includes('amazing')) aiResult.sentiment = Sentiment.POSITIVE;
+      
       aiResult.emotion = "Analysis Unavailable";
+      (aiResult as any).mismatch = false;
     }
 
     // Mismatch detection logic
-    let mismatch = false;
+    let mismatch = (aiResult as any).mismatch || false;
     if (data.rating >= 4 && aiResult.sentiment === Sentiment.NEGATIVE) mismatch = true;
     if (data.rating <= 2 && aiResult.sentiment === Sentiment.POSITIVE) mismatch = true;
 
