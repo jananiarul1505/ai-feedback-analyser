@@ -102,6 +102,7 @@ class DataService {
         1. Text: "It is fine." Rating: 4. Rec: Yes. -> Sentiment: Positive, Emotion: Contentment.
         2. Text: "It is fine." Rating: 2. Rec: No. -> Sentiment: Negative, Emotion: Disappointed Indifference.
         3. Text: "Amazing app, but it crashes." Rating: 3. Rec: Maybe. -> Sentiment: Neutral, Emotion: Frustrated Appreciation.
+        4. Text: "food is delicious" Rating: 1. Rec: No. -> Sentiment: Positive, Emotion: Sarcastic Amusement, Mismatch: true.
 
         REQUIREMENTS:
         1. Emotion Analysis: Identify the specific, high-resolution emotional state. 
@@ -163,7 +164,7 @@ class DataService {
 
       // refine with text if text is strong
       if (lower.includes('bad') || lower.includes('terrible') || lower.includes('awful')) aiResult.sentiment = Sentiment.NEGATIVE;
-      if (lower.includes('good') || lower.includes('love') || lower.includes('amazing')) aiResult.sentiment = Sentiment.POSITIVE;
+      if (lower.includes('good') || lower.includes('love') || lower.includes('amazing') || lower.includes('delicious')) aiResult.sentiment = Sentiment.POSITIVE;
       
       aiResult.emotion = "Analysis Unavailable";
       (aiResult as any).mismatch = false;
